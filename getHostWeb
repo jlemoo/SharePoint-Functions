@@ -1,0 +1,3 @@
+var thisURL = location.href;
+var spLocation = thisURL.indexOf("/SitePages");
+var hostweburl = thisURL.substring(0,spLocation);

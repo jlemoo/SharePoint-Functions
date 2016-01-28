@@ -1,0 +1,31 @@
+var itemType = "SP.Data.ClearanceListItem";
+var item = {
+            "__metadata": { "type": itemType },
+            "FiscalSignatureId": null,
+            "FiscalSignDate": null,
+            "FiscalComment": signatureComment,
+            "ChangeHistory": stuffThatChanged
+        };
+        var requestDigest = sharedProperties.getRequestDigest();
+        $http.defaults.headers.common.Accept = "application/json;odata=verbose";
+        $http.defaults.headers.post['Content-Type'] = 'application/json;odata=verbose';
+        $http.defaults.headers.post['X-Requested-With'] = 'XMLHttpRequest';
+        $http.defaults.headers.post['If-Match'] = "*";
+        $http.defaults.headers.post['X-HTTP-Method'] = "MERGE";
+        $http.defaults.headers.post['X-RequestDigest'] = requestDigest;
+        var dfd = $q.defer();
+        var restURL = hostweburl + "/_api/lists/getbytitle('Clearance')/items(" + itemID + ")";
+        $http.post(restURL, item).success(function (data) {
+            //resolve the new data
+            dfd.resolve(data.d);
+            var protocol = window.location.protocol;
+            var path = window.location.pathname;
+            var host = window.location.hostname;
+            var finalURL = protocol + "//" + host + path;
+            $scope.signatureDisplayName = "Not Signed";
+            $scope.signatureDate = "";
+            window.location.href = finalURL;
+        }).error(function (data) {
+            dfd.reject("failed to update a clearance request");
+        });
+        return dfd.promise;

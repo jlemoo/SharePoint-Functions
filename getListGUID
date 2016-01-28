@@ -1,0 +1,15 @@
+        var listRESTURL = hostweburl + "/_api/lists/getbytitle('Clearance%27%29";
+        $http.get(listRESTURL).success(function (data) {
+            if (data.d) {
+                clearanceListID = data.d.Id;
+            }
+            else {
+                clearanceListID = data.Id;
+            }
+            //old stuff from when the data was coming back differently
+//            var xmlDoc = jQuery.parseXML(data);
+//            var thisXML = jQuery(xmlDoc);
+//            var thisIDHTML = thisXML.find("Id")[0];
+//            var listID = thisIDHTML.textContent;
+//            clearanceListID = listID;
+            });

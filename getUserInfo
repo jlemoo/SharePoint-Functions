@@ -1,0 +1,4 @@
+function getUserInfo(userID){
+  restUrl = hostweburl + "/_api/web/GetUserById(" + userID + ")";
+  return jQuery.ajax({url: restUrl,dataType:'json'});
+}

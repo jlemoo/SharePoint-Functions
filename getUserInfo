@@ -2,3 +2,46 @@ function getUserInfo(userID){
   restUrl = hostweburl + "/_api/web/GetUserById(" + userID + ")";
   return jQuery.ajax({url: restUrl,dataType:'json'});
 }
+//get users's display name
+            restUrl = hostweburl + "/_api/sp.userprofiles.peoplemanager/getmyproperties";
+            $http.get(restUrl).success(function (data){
+                var ThisUsersDisplayName = data.DisplayName;
+                var thisUsersAccountName = data.AccountName;
+                    }).error(function (data) {
+                    alert("Error getting current user");
+                });
+//get user's groups
+    function getCurrentUserGroupColl()
+    {
+        var accountName = sharedProperties.getCurrentUserAccount();
+        var context = new SP.ClientContext.get_current();
+        this.user = context.get_web().ensureUser(accountName);
+        context.load(this.user);
+        context.executeQueryAsync(
+            Function.createDelegate(null, ensureUserSuccess),
+            Function.createDelegate(null, onUserFail)
+            );
+        }     
+        function ensureUserSuccess() {
+            var thisUserID = this.user.get_id();
+            sharedProperties.setThisUserID(thisUserID);
+            var restURL = hostweburl + "/_api/web/GetUserById("+ thisUserID +")/Groups";
+            jQuery.ajax({
+                url: restURL, 
+                method: "GET",
+                headers: { "Accept": "application/json; odata=verbose" },
+                success: userGroupSuccess,
+                error: userGroupFailure});
+        }
+        function onUserFail(sender, args) {
+            alert('Query failed. Error: ' + args.get_message());
+        }
+    function userGroupSuccess(data){
+        var permissionToEditTop = false;
+        var results = data.d.results;
+        var safetyGroup;
+        var groupArraySize = results.length;
+        for(var i=0; i < groupArraySize;i++){
+            groupTitle = results[i].Title;
+          if(groupTitle==="your group"){}
+          }

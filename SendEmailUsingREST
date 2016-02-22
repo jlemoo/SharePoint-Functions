@@ -1,5 +1,6 @@
         //begin generic sendmail function
         //Note I got this from some place else. I didn't write this.
+        //the "to" field must be in the form of an array.
         function sendEmail(from, to, body, subject){
             var requestDigest = sharedProperties.getRequestDigest();
             var urlTemplate = hostweburl + "/_api/SP.Utilities.Utility.SendEmail";

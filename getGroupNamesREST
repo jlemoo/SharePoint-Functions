@@ -1,0 +1,76 @@
+    function getGroups() {
+        var noPermissions = true;
+        var restURL = hostweburl + "/_api/sp.userprofiles.peoplemanager/getmyproperties";
+        jQuery.ajax({
+            url: restURL,
+            method: "GET",
+            headers: { "Accept": "application/json;odata=verbose" },
+            success: userSuccessHandler,
+            error: userErrorHandler
+        }
+        );
+        function userSuccessHandler(data) {
+            var accountName = data.d.AccountName;
+            var payload = { 'logonName': accountName };
+            var restURL = hostweburl + "/_api/web/ensureUser";
+            $.ajax({
+                url: restURL,
+                type: "POST",
+                data: JSON.stringify(payload),
+                contentType: "application/json;odata=verbose",
+                headers: {
+                    "X-RequestDigest": myRequestDigest,
+                    "accept": "application/json;odata=verbose"
+                },
+                success: successHandler,
+                error: errorHandler
+            });
+            function successHandler(data) {
+                var thisUserID = data.d.Id;
+                currentUserID = thisUserID;
+                thisUserEmail = data.d.Email;
+                var restURL = hostweburl + "/_api/web/GetUserById(" + thisUserID + ")/Groups";
+                jQuery.ajax({
+                    url: restURL,
+                    method: "GET",
+                    headers: { "Accept": "application/json; odata=verbose" },
+                    success: userGroupSuccess,
+                    error: userGroupFailure
+                });
+            }
+            function errorHandler(data) {
+                console.log(data)
+            }
+            function onUserFail(sender, args) {
+                alert('Query failed. Error: ' + args.get_message());
+            };
+            function userGroupFailure(data) {
+                console.log(data);
+                alert("Failed to get supervisor's groups");
+            }
+            function userGroupSuccess(data) {
+                var results = data.d.results;
+                var adminGroup;
+                var groupArraySize = results.length;
+                for (var i = 0; i < groupArraySize; i++) {
+                    groupTitle = results[i].Title;
+                    if (groupTitle === "Workplace Violence Admins") {
+                        noPermissions = false;
+                    }
+                };
+                if (noPermissions) {
+                    jQuery("#reportsList").prop("hidden", true);
+                    jQuery("#noAccess").prop("hidden", false);
+                }
+                else {
+                    jQuery("#reportsList").prop("hidden", false)
+                    jQuery("#noAccess").prop("hidden", true);
+                }
+                //now that we know the current user id and groups, get the item.
+                getItems();
+            };
+        }
+        function userErrorHandler(data) {
+            console.log("Problem getting user info" + data);
+        }
+    }

@@ -1,0 +1,12 @@
+    restUrl = hostweburl + "/_api/contextinfo";
+    jQuery.ajax({
+        url: restUrl,
+        method: "POST",
+        headers: { "Accept": "application/json; odata=verbose" },
+        success: function (data) {
+            myRequestDigest = data.d.GetContextWebInformation.FormDigestValue;
+        },
+        error: function (data, errorCode, errorMessage) {
+            alert(errorMessage)
+        }
+    });

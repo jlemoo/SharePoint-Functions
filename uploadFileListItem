@@ -1,0 +1,74 @@
+    //file upload stuff
+    jQuery("#uploadFile").on("click", function () {
+        function UploadFile() {
+            var myRequestDigest;
+            //begin get request digest
+            restUrl = targethostweb + "/_api/contextinfo";
+            jQuery.ajax({
+                url: restUrl,
+                method: "POST",
+                headers: { "Accept": "application/json; odata=verbose" },
+                success: function (data) {
+                    myRequestDigest = data.d.GetContextWebInformation.FormDigestValue;
+                    continueUpload();
+                },
+                error: function (data, errorCode, errorMessage) {
+                    alert(errorMessage)
+                }
+            });
+            function continueUpload() {
+                var fileInput = jQuery('#fileSelectorInput');
+                for (var i = 0; i < fileInput[0].files.length; i++) {
+                    var file = fileInput[0].files[i];
+                    var fileSize = file.size;
+                    var fileName = file.name;
+                    if (fileSize > 10485760) {
+                        alert("File sizesf are restricted to 10 mb.")
+                    } else {
+                        var getFile = getFileBuffer();
+                        getFile.done(function (arrayBuffer) {
+                            var addFile = addFileToListItem(arrayBuffer, fileName);
+                            jQuery.when(addFile).done(function () {
+                                readAllAttachments()
+                            }).fail(function () {
+                                console.log("Couldn't add file");
+                            });
+                        });
+                    }
+                }
+            }
+            function addFileToListItem(arrayBuffer, fileName) {
+                var restURL = hostweburl + "/_api/web/lists/GetByTitle('Workplace Violence Incident Report')/items(" + itemID + ")/AttachmentFiles/add(FileName='" + fileName + "')";
+                return jQuery.ajax({
+                    url: restURL,
+                    type: "POST",
+                    data: arrayBuffer,
+                    processData: false,
+                    headers: {
+                        "Accept": "application/json; odata=verbose",
+                        "X-RequestDigest": myRequestDigest,
+                        "content-length": arrayBuffer.bytelength
+                    },
+                    contentType: "application/json;odata=verbose"
+                });
+            }
+            function getFileBuffer() {
+                var fileInput = jQuery('#fileSelectorInput');
+                var deferred = jQuery.Deferred();
+                var reader = new FileReader();
+                reader.onloadend = function (e) {
+                    deferred.resolve(e.target.result);
+                }
+                reader.onerror = function (e) {
+                    deferred.reject(e.target.error);
+                }
+                reader.readAsArrayBuffer(fileInput[0].files[0]);
+                return deferred.promise();
+            }
+            function filesFail() {
+                alert("could not read attachments");
+            }
+        }
+        UploadFile();
+    });
+    //end file upload stuff

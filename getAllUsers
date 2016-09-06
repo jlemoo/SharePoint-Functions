@@ -1,0 +1,4 @@
+        function getAllUsers() {
+            restUrl = hostweburl + "/_api/web/siteusers";
+            return jQuery.ajax({ url: restUrl, dataType: 'json' });
+        };

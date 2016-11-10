@@ -1,0 +1,23 @@
+function deleteItem(){
+	var thisID = itemObject.id;
+	var itemTitle = itemObject.title;
+	if (confirm('Are you sure you want to delete the item "' + itemTitle + '?"' )){
+		var restURL = hostweburl + "/_api/lists/getbytitle('yourListTitle')/items(" + itemID + ")/recycle()";
+		jQuery.ajax({
+			url: restURL,
+			type: "POST",
+			headers:{
+				"Accept": "application/json;odata=verbose",
+				"X-RequestDigest": $("#__REQUESTDIGEST").val(),
+				"X-Http-Method": "POST",
+				"IF-MATCH": "*"
+			},
+			success: function(data){
+				alert("Document " + itemTitle + " deleted.");​
+			},
+			error: function(data){
+				
+			}
+		});        		
+	}
+}

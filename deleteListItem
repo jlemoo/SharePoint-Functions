@@ -1,0 +1,69 @@
+        $scope.deleteRFP = function () {
+            function getRequestDigest() {
+                restUrl = hostweburl + "/_api/contextinfo";
+                $http.post(restUrl).success(function (data) {
+                    if (data.d) {
+                        requestDigest = data.d.GetContextWebInformation.FormDigestValue;
+                    }
+                    else {
+                        requestDigest = data.FormDigestValue;
+                    }
+                    deleteItem(requestDigest);
+                }).error(function (data) { alert("Could not get request digest") });
+            };
+            function deleteItem(requestDigest) {
+                if (confirm('Are you sure you want to delete the RFP "' + projectName + '?"' )){
+                    var restURL = hostweburl + "/_api/lists/getbytitle('RFP%20Items')/items(" + itemID + ")/recycle()";
+                    jQuery.ajax({
+                        url: restURL,
+                        type: "POST",
+                        headers:{
+                            "Accept": "application/json;odata=verbose",
+                            "X-RequestDigest": requestDigest,
+                            "X-Http-Method": "POST",
+                            "IF-MATCH": "*"
+                        },
+                        success: function(data){
+                            console.log(itemID + "deleted");
+                            function deleteCorrespondingFolder(itemID) {
+                                var folderName = Number(itemID) + 20000;
+                                var folderNameString = String(folderName);
+                                var pathName = window.location.pathname;
+                                var sposition = pathName.indexOf("SiteAssets");
+                                var secondPart = pathName.substr(0, sposition);
+                                var restURL = hostweburl + "/_api/Web/GetFolderByServerRelativeUrl('" + secondPart + "RFP%20Library/" + folderNameString + "')/recycle";
+                                jQuery.ajax({
+                                    url: restURL,
+                                    type: "POST",
+                                    headers: {
+                                        "Accept": "application/json;odata=verbose",
+                                        "X-RequestDigest": requestDigest,
+                                        "X-Http-Method": "POST",
+                                        "IF-MATCH": "*"
+                                    },
+                                    success: function (data) {
+                                        console.log("folder deleted");
+                                        gotoFinalDestination();
+                                    },
+                                    error: function (data) {
+                                        console.log("error deleting folder");
+                                        gotoFinalDestination();
+                                    }
+                                });
+                            };
+                            function gotoFinalDestination() {
+                                var origin = window.location.origin;
+                                var pathName = window.location.pathname;
+                                var finalLocation = origin + pathName;
+                                window.location.href = finalLocation;
+                            };
+                            deleteCorrespondingFolder(itemID);
+                        },
+                        error: function(data){
+                            console.log(data);				
+                        }
+                    });        		
+                };
+            };
+            getRequestDigest();
+        };

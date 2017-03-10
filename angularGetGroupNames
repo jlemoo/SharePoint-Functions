@@ -1,0 +1,58 @@
+function getGroups()
+      {
+          var noPermissions = true;
+          var restURL = hostweburl + "/_api/sp.userprofiles.peoplemanager/getmyproperties";
+          $http({
+              method: 'GET',
+              url: restURL
+          }).then(function successPropertiesCallback(data)
+          {
+              $http.defaults.headers.common.Accept = "application/json;odata=verbose";
+              $http.defaults.headers.post['Content-Type'] = 'application/json;odata=verbose';
+              $http.defaults.headers.post['X-Requested-With'] = 'XMLHttpRequest';
+              $http.defaults.headers.post['If-Match'] = "*";
+              $http.defaults.headers.post['X-HTTP-Method'] = "";
+              $http.defaults.headers.post['X-RequestDigest'] = myRequestDigest;
+              var accountName = data.data.AccountName;
+              if (!accountName){accountName=data.data.d.AccountName}
+              var payload = { 'logonName': accountName };
+              var restURL = hostweburl + "/_api/web/ensureUser";
+              $http({
+                  method: 'POST',
+                  url: restURL,
+                  data: payload
+              }).then(function successUserIdCallback(data)
+              {
+                  var thisUserID = data.data.d.Id;
+                  var thisUserEmail = data.data.d.Email;
+                  var restURL = hostweburl + "/_api/web/GetUserById(" + thisUserID + ")/Groups";
+                  $http({
+                      method: 'GET',
+                      url: restURL
+                  }).then(function successGroupsCallback(data)
+                  {
+                      var results = data.data.d.results;
+                      var adminGroup;
+                      $scope.showOnBehalfOf = true;
+                      var groupArraySize = results.length;
+                      for (var i = 0; i < groupArraySize; i++)
+                      {
+                          var groupTitle = results[i].Title;
+                          if (groupTitle === "On Behalf Of Users")
+                          {
+                              $scope.showOnBehalfOf = true;
+                          }
+                      }
+                  }, function errorGroupsCallback(data)
+                  {
+                      alert(data)
+                  });
+              }, function errorUserIDCallback(response)
+              {
+                  console.log(response)
+              });
+          }, function errorPropertiesCallback(response)
+          {
+              alert(response)
+          });
+      };

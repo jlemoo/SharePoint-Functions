@@ -1,0 +1,41 @@
+function makeChanges()
+            {
+                var spitemType = "SP.Data.ImmunizationsListItem";
+                var itemUpdates = [];
+                for(var key in sharePointDictionary){
+                    var thisStatusArray=sharePointDictionary[key];
+                    var item = {
+                        "__metadata": { "type": spitemType },
+                        "STATUS1": {
+                            "__metadata": { type: "Collection(Edm.String)" },
+                            results: thisStatusArray
+                        }
+                    };
+                    //key must be the ID of the SharePoint Item to update.
+                    var restURL = hostweburl + "/_api/web/lists/getbytitle('list name here')/items(" + key + "%29";
+                    var promise = jQuery.ajax({
+                        url: restURL,
+                        type: "MERGE",
+                        contentType: "application/json;odata=verbose",
+                        data: JSON.stringify(item),
+                        headers: {
+                            "Accept": "application/json;odata=verbose",
+                            "X-RequestDigest": myRequestDigest,
+                            "If-Match" : "*"
+                        },
+                        success: function (data)
+                        {
+                            console.log("updated item " + key + " to list of emails.");
+                        },
+                        error: function (data)
+                        {
+                            console.log(data)
+                        }
+                    });
+                    itemUpdates.push(promise);
+                };
+                Q.all(itemUpdates).then(function ()
+                {
+                   document.getElementById("doneBlock").innerHTML="Done!!"
+                });
+            }

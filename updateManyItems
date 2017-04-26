@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Status Adjuster</title>
+    <script type="text/javascript" src="jquery.min.js"></script>
+    <script type="text/javascript" src="q.js"></script>
+    <script type="text/javascript">
+        String.prototype.replaceAll = function (search, replacement)
+        {
+            var target = this;
+            return target.split(search).join(replacement);
+        };
+        function massageData()
+        {
+            var thisURL = location.href;
+            var spLocation = thisURL.indexOf("/SitePages");
+            var hostweburl = thisURL.substring(0, spLocation);
+            var ids = [];
+            var sharePointDictionary = {};
+            var myRequestDigest;
+            function getRequestDigest()
+            {
+                restUrl = hostweburl + "/_api/contextinfo";
+                jQuery.ajax({
+                    url: restUrl,
+                    method: "POST",
+                    headers: { "Accept": "application/json; odata=verbose" },
+                    success: function (data)
+                    {
+                        myRequestDigest = data.d.GetContextWebInformation.FormDigestValue;
+                        getProcessList();
+                    },
+                    error: function (data, errorCode, errorMessage)
+                    {
+                        alert(errorMessage)
+                    }
+                });
+            };
+            function getProcessList()
+            {
+                var restURL = hostweburl + "/_api/lists/getbytitle('Process Tracking')/items?$top=5000";
+                jQuery.ajax({
+                    url: restURL,
+                    method: "GET",
+                    headers: { "Accept": "application/json;odata=verbose" },
+                    success: imuSuccessHandler,
+                    error: imuErrorHandler
+                });
+                function imuSuccessHandler(data)
+                {
+                    var results = data.d.results;
+                    var breakString = "<BR/>";
+                    for (var i = 0; i < results.length; i++)
+                    {
+                        var thisID = results[i].Id;
+                        sharePointDictionary[thisID]=results[i].Comments;
+                    };
+                    makeChanges();
+                };
+                function imuErrorHandler(data)
+                {
+                    console.log(data);
+                };
+            };
+            function makeChanges()
+            {
+                var spitemType = "SP.Data.Process_x0020_TrackingListItem";
+                var itemUpdates = [];
+                for (var key in sharePointDictionary)
+                {
+                    if (key == 789)
+                    {
+                        var comment = sharePointDictionary[key];
+                        var cr = String.fromCharCode(10);
+                        var newComment = comment.replaceAll("<BR/>", cr);
+                        var item = {
+                            "__metadata": { "type": spitemType },
+                            "Comments": newComment
+                        };
+                        var restURL = hostweburl + "/_api/web/lists/getbytitle('Process Tracking')/items(" + key + "%29";
+                        var promise = jQuery.ajax({
+                            url: restURL,
+                            type: "MERGE",
+                            contentType: "application/json;odata=verbose",
+                            data: JSON.stringify(item),
+                            headers: {
+                                "Accept": "application/json;odata=verbose",
+                                "X-RequestDigest": myRequestDigest,
+                                "If-Match": "*"
+                            },
+                            success: function (data)
+                            {
+                                console.log("updated item " + key + " to list of emails.");
+                            },
+                            error: function (data)
+                            {
+                                console.log(data)
+                            }
+                        });
+                        itemUpdates.push(promise);
+                    }
+                };
+                Q.all(itemUpdates).then(function ()
+                {
+                    document.getElementById("doneBlock").innerHTML = "Done!!"
+                });
+            }
+            getRequestDigest();
+        };
+    </script>
+</head>
+<body>
+    This script is used once, and only once to massage the format of the Comments column.
+    Line breaks in the comments column, when inported from Lotus Notes, will appear as HTML break tags or 
+    <code><br /></code>. This script will 
+
+    <ul>
+        <li>
+            read the value of Comments
+        </li>
+        <li>
+            Replace any <code><br /></code> with String.fromCharCode(10)
+        </li>
+        <li>
+            merge it back with the list item.
+        </li>
+    </ul>
+    <br />
+    <button onclick="massageData()">Format Comments</button>
+    <div id="doneBlock"></div>
+</body>
+</html>

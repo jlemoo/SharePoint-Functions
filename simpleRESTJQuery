@@ -1,0 +1,134 @@
+<head>
+    <script type="text/javascript" src="../SiteAssets/js/vendor/jquery-3.3.1.js"></script>
+    <style type="text/css">
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+    </style>
+    <script>
+        var hostweburl = "https://nysemail.sharepoint.com/sites/HealthIntranet/TDI/";
+        var docLibraryName = "HNfAO%20Documents/";
+        var restURL = hostweburl + "/_api/lists/getbytitle('Daily Clips')/items?$top=5000&$orderby=Happened_x0020_on_x0020_";
+        var currentMonthYear;
+        jQuery(document).ready(function () {
+            jQuery.ajax(
+                {
+                    url: restURL,
+                    method: "GET",
+                    headers: { "Accept": "application/json; odata=verbose" },
+                    success: tableSuccessHandler,
+                    error: tableErrorHandler
+                }
+            );
+            function tableSuccessHandler(data) {
+                var results = data.d.results;
+                var happenedOn;
+                var happenedOnDate;
+                var happenedOnMonth;
+                var yearMonth;
+                var arrayOfTables = [];//each element will be a full HTML table;
+                if (results.length === 0) {
+                    //this should never happen.
+                    alert("Failed to retrieve any data");
+                }
+                else {
+                    var arrayLength = results.length;
+                    var resultArray = [];
+                    for (var i = 0; i < arrayLength; i++) {
+                        happenedOn = results[i].Happened_x0020_on_x0020_; //happenedOn is text, but will be in date format.
+                        happenedOnDate = new Date(happenedOn);
+                        //happenedOnMonth = happenedOnDate.getMonth() + 1;
+                        yearMonth = results[i].Year_x002f_Month;
+                        happenedOnMonth = yearMonth.substr(5, 2);
+                        var docObj = { happenedOn: happenedOn, happenedOnDate: happenedOnDate, happenedOnMonth: happenedOnMonth, yearMonth: yearMonth };
+                        resultArray.push(docObj);
+                    }
+                    //now we have a list of all results
+                    //we are going to creat an array of tables.
+                    //each element of the array will be an HTML table string.
+                    var tableHTMLStart = "<table><tbody>";
+                    for (var i = 0; i < arrayLength; i++) {//loop through all results
+                        //mm_dd_yy
+                        var tableHTML = "";
+                        var monthPart = resultArray[i].happenedOnMonth;
+                        if (monthPart.length == 1) { monthPart = "0" + monthPart };
+                        var monthPartStore = monthPart;
+                        var yearMonth;
+                        while (monthPartStore == monthPart) {
+                            var dayPart = resultArray[i].happenedOnDate.getDate().toString();
+                            if (dayPart.length == 1) { dayPart = "0" + dayPart.toString() };
+                            var yearPart = resultArray[i].happenedOnDate.getFullYear().toString();
+                            yearPart = yearPart.substr(2, 4);
+                            var fullURL = hostweburl + docLibraryName + monthPart + "_" + dayPart + "_" + yearPart + ".pdf";
+                            tableHTML += "<tr>" + "<td>";
+                            tableHTML += '<a href="' + fullURL + '" target="_blank">' + monthPart + "_" + dayPart + "_" + yearPart + '</a>';
+                            tableHTML += "</td></tr>";
+                            yearMonth = resultArray[i].yearMonth;
+                            currentMonthYear = yearMonth;
+                            i++
+                            if (i == arrayLength) { break; }
+                            var monthPart = resultArray[i].happenedOnMonth;
+                        };
+                        i--;
+                        //we should now have a table for the month.
+                        tableHTML += "</tbody></table>";
+                        tableHTML = tableHTMLStart + tableHTML;
+                        var tableObject = { tableHTML: tableHTML, yearMonth: yearMonth }
+                        arrayOfTables.push(tableObject);
+                    }
+                }
+                document.getElementById("dailyClipsTables").innerHTML = arrayOfTables[arrayOfTables.length - 1].tableHTML;
+                if (currentMonthYear == arrayOfTables[arrayOfTables.length - 1].yearMonth) {
+                    document.getElementById("nextButton").hidden = true;
+                };
+                document.getElementById("thisMonth").innerHTML = arrayOfTables[arrayOfTables.length - 1].yearMonth;
+                document.getElementById("prevButton").addEventListener("click", function () {
+                    var i = 0;
+                    for (var i = 0; i < arrayOfTables.length; i++) {
+                        if (arrayOfTables[i].yearMonth == currentMonthYear) {
+                            i = i - 1;
+                            currentMonthYear = arrayOfTables[i].yearMonth;
+                            if (currentMonthYear != arrayOfTables[arrayOfTables.length - 1].yearMonth) {
+                                document.getElementById("nextButton").hidden = false;
+                            };
+                            if (currentMonthYear == arrayOfTables[0].yearMonth) {
+                                document.getElementById("prevButton").hidden = true;
+                            };
+                            document.getElementById("dailyClipsTables").innerHTML = arrayOfTables[i].tableHTML;
+                            document.getElementById("thisMonth").innerHTML = arrayOfTables[i].yearMonth;
+                            break;
+                        }
+                    };
+                });
+                document.getElementById("nextButton").addEventListener("click", function () {
+                    var i = 0;
+                    for (var i = 0; i < arrayOfTables.length; i++) {
+                        if (arrayOfTables[i].yearMonth == currentMonthYear) {
+                            i = i + 1;
+                            currentMonthYear = arrayOfTables[i].yearMonth;
+                            document.getElementById("dailyClipsTables").innerHTML = arrayOfTables[i].tableHTML;
+                            document.getElementById("thisMonth").innerHTML = arrayOfTables[i].yearMonth;
+                            if (currentMonthYear == arrayOfTables[arrayOfTables.length - 1].yearMonth) {
+                                document.getElementById("nextButton").hidden = true;
+                            };
+                            if (currentMonthYear != arrayOfTables[0].yearMonth) {
+                                document.getElementById("prevButton").hidden = false;
+                            };
+                            break;
+                        }
+                    };
+                });
+            }
+            function tableErrorHandler(data) {
+                console.log(data);
+            }
+        });
+    </script>
+</head>
+<body>
+    Year/Month <b><span id="thisMonth"></span></b>
+    <div id="dailyClipsTables"></div>
+    <br>
+    <button id="prevButton" type="button" style="color:blue">&lt;&lt; Previous Month</button><button style="color:blue" id="nextButton" type="button">Next Month >></button>
+</body>
+</html>
